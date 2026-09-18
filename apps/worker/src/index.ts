@@ -13,6 +13,7 @@ export interface Env {
   AIVEN_HOST: string;
   AIVEN_PORT: string;
   PLATFORM_NAME: string;
+  ASSETS?: Fetcher;
 }
 
 const CORS_HEADERS: Record<string, string> = {
@@ -289,15 +290,14 @@ export default {
       );
     }
 
-    // 7. Root Dashboard / Edge Status View
-    const acceptsHtml = request.headers.get('Accept')?.includes('text/html');
-    if (path === '/' && acceptsHtml) {
+    // 7. Edge Diagnostic Summary View
+    if (path === '/api/edge-summary' || path === '/edge-summary') {
       const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ArbNexus � Cloudflare Edge Intelligence Gateway</title>
+  <title>ArbNexus • Cloudflare Edge Intelligence Gateway</title>
   <style>
     :root {
       --bg: #090d16;
@@ -318,84 +318,76 @@ export default {
       line-height: 1.5;
     }
     .container { max-width: 960px; margin: 0 auto; }
-    header { margin-bottom: 32px; border-bottom: 1px solid var(--border); padding-bottom: 24px; }
-    h1 { font-size: 28px; color: #fff; display: flex; align-items: center; gap: 12px; }
+    .header { margin-bottom: 32px; border-bottom: 1px solid var(--border); padding-bottom: 24px; }
     .badge {
       display: inline-block;
+      padding: 4px 10px;
+      border-radius: 9999px;
       font-size: 11px;
       font-weight: 700;
-      padding: 4px 8px;
-      border-radius: 9999px;
-      text-transform: uppercase;
       letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
     }
-    .badge-cyan { background: rgba(6,182,212,0.15); color: var(--cyan); border: 1px solid rgba(6,182,212,0.3); }
-    .badge-emerald { background: rgba(16,185,129,0.15); color: var(--emerald); border: 1px solid rgba(16,185,129,0.3); }
-    .badge-amber { background: rgba(245,158,11,0.15); color: var(--amber); border: 1px solid rgba(245,158,11,0.3); }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-    }
-    .card h3 { font-size: 14px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; letter-spacing: 0.05em; }
-    .card .val { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 4px; }
-    .card p { font-size: 13px; color: var(--muted); }
-    .endpoints { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
-    .endpoints h2 { font-size: 18px; margin-bottom: 16px; color: #fff; }
-    .endpoint-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-family: monospace; font-size: 14px; }
+    .badge-prod { background: rgba(16, 185, 129, 0.15); color: var(--emerald); border: 1px solid var(--emerald); }
+    .badge-warn { background: rgba(245, 158, 11, 0.15); color: var(--amber); border: 1px solid var(--amber); }
+    h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; }
+    p.lead { color: var(--muted); font-size: 15px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+    .card-title { font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em; margin-bottom: 8px; }
+    .card-value { font-size: 20px; font-weight: 700; color: var(--cyan); }
+    .endpoints { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 24px; margin-bottom: 32px; }
+    .endpoints h2 { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--text); }
+    .endpoint-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; font-family: monospace; }
     .endpoint-row:last-child { border-bottom: none; }
-    .method { color: var(--emerald); font-weight: bold; width: 60px; }
-    .link { color: var(--cyan); text-decoration: none; }
-    .link:hover { text-decoration: underline; }
+    .method { color: var(--cyan); font-weight: 700; margin-right: 8px; }
+    .link { color: var(--text); text-decoration: none; }
+    .link:hover { text-decoration: underline; color: var(--cyan); }
     .safety-banner {
-      background: rgba(245,158,11,0.08);
-      border: 1px solid rgba(245,158,11,0.3);
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
       border-radius: 8px;
-      padding: 16px;
+      padding: 16px 20px;
       font-size: 13px;
-      color: #fbbf24;
-      margin-top: 24px;
+      color: var(--amber);
+      line-height: 1.6;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <header>
-      <h1>ArbNexus <span class="badge badge-cyan">Cloudflare Edge Worker</span></h1>
-      <p style="color: var(--muted); margin-top: 6px;">
-        High-throughput serverless edge intelligence gateway connected to Aiven Cloud PostgreSQL.
-      </p>
-    </header>
+    <div class="header">
+      <span class="badge badge-prod">Production Online</span>
+      <span class="badge badge-warn">Execution Disabled (Safe)</span>
+      <h1>ArbNexus Edge Intelligence Gateway</h1>
+      <p class="lead">Global low-latency Cloudflare Edge Worker connected to Aiven Cloud PostgreSQL for high-frequency crypto arbitrage analytics.</p>
+    </div>
 
     <div class="grid">
       <div class="card">
-        <h3>Edge Location</h3>
-        <div class="val">${(request as any).cf?.colo || 'Global Edge'}</div>
-        <p>Served via Cloudflare Global Anycast Network</p>
+        <div class="card-title">Edge POP / Colo</div>
+        <div class="card-value">${(request as any).cf?.colo || 'GLOBAL'} ${(request as any).cf?.country ? `(${(request as any).cf?.country})` : ''}</div>
       </div>
       <div class="card">
-        <h3>PostgreSQL Database</h3>
-        <div class="val" style="color: var(--emerald);">Aiven Cloud (19 Tables)</div>
-        <p>Host: ${env.AIVEN_HOST || 'pg-1637aba4-arbnexus4-d8f9.h.aivencloud.com'}</p>
+        <div class="card-title">Aiven PostgreSQL</div>
+        <div class="card-value" style="color: var(--emerald);">CONNECTED</div>
       </div>
       <div class="card">
-        <h3>Safety Mode</h3>
-        <div class="val" style="color: var(--amber);">SIMULATION ONLY</div>
-        <p>ENABLE_EXECUTION = false (Permanently Blocked)</p>
+        <div class="card-title">Real-Money Trading</div>
+        <div class="card-value" style="color: var(--amber);">DISABLED (SAFE)</div>
       </div>
     </div>
 
     <div class="endpoints">
-      <h2>Active Edge API Endpoints</h2>
+      <h2>Active Edge Endpoints</h2>
       <div class="endpoint-row">
         <span><span class="method">GET</span> <a class="link" href="/api/health">/api/health</a></span>
-        <span style="color: var(--muted);">Edge health &amp; safety status</span>
+        <span style="color: var(--muted);">Edge worker &amp; database liveness probe</span>
       </div>
       <div class="endpoint-row">
-        <span><span class="method">GET</span> <a class="link" href="/api/db/health">/api/db/health</a></span>
-        <span style="color: var(--muted);">Aiven PostgreSQL schema status</span>
+        <span><span class="method">GET</span> <a class="link" href="/api/database">/api/database</a></span>
+        <span style="color: var(--muted);">Direct Aiven PostgreSQL query verification</span>
       </div>
       <div class="endpoint-row">
         <span><span class="method">GET</span> <a class="link" href="/api/exchanges">/api/exchanges</a></span>
@@ -409,10 +401,14 @@ export default {
         <span><span class="method">GET</span> <a class="link" href="/api/opportunities">/api/opportunities</a></span>
         <span style="color: var(--muted);">Scored arbitrage feed with checkpoints</span>
       </div>
+      <div class="endpoint-row">
+        <span><span class="method">GET</span> <a class="link" href="/api/edge-summary">/api/edge-summary</a></span>
+        <span style="color: var(--muted);">Edge diagnostic summary view</span>
+      </div>
     </div>
 
     <div class="safety-banner">
-      <strong>?? Safety Policy Enforcement:</strong> Real-money orders, transaction broadcasting, and private key storage are permanently disabled (ENABLE_EXECUTION=false). Simulated returns do not represent guaranteed execution in live markets.
+      <strong>🛡️ Safety Policy Enforcement:</strong> Real-money orders, transaction broadcasting, and private key storage are permanently disabled (ENABLE_EXECUTION=false). Simulated returns do not represent guaranteed execution in live markets.
     </div>
   </div>
 </body>
@@ -426,30 +422,35 @@ export default {
       });
     }
 
-    // Default JSON fallback
+    // 8. Static Web Application Asset Delivery via env.ASSETS
+    if (env.ASSETS) {
+      const assetRes = await env.ASSETS.fetch(request);
+      if (assetRes.status !== 404) {
+        return assetRes;
+      }
+      // SPA Fallback: If not an API request, fall back to index.html
+      if (!path.startsWith('/api')) {
+        const indexRequest = new Request(new URL('/', request.url), request);
+        return env.ASSETS.fetch(indexRequest);
+      }
+    }
+
+    // 9. API 404 Fallback
     return new Response(
       JSON.stringify({
-        platform: 'ArbNexus',
-        service: 'Cloudflare Edge Worker Gateway',
-        version: '1.0.0',
-        endpoints: [
+        error: 'NOT_FOUND',
+        message: `Endpoint ${path} does not exist on ArbNexus Edge Gateway`,
+        available_endpoints: [
           '/api/health',
-          '/api/db/health',
+          '/api/database',
           '/api/exchanges',
           '/api/strategies',
           '/api/opportunities',
+          '/api/edge-summary',
         ],
-        database: {
-          provider: 'Aiven Cloud PostgreSQL',
-          status: 'ONLINE',
-          host: env.AIVEN_HOST,
-        },
-        safety: {
-          ENABLE_EXECUTION: false,
-        },
         timestamp: new Date().toISOString(),
       }),
-      { status: 200, headers: responseHeaders },
+      { status: 404, headers: responseHeaders },
     );
   },
 };

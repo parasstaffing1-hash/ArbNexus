@@ -3,6 +3,10 @@ main = "src/index.ts"
 compatibility_date = "2026-03-01"
 compatibility_flags = ["nodejs_compat"]
 
+[assets]
+directory = "../web/out"
+binding = "ASSETS"
+
 [vars]
 ENVIRONMENT = "production"
 ENABLE_EXECUTION = "false"
