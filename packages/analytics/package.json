@@ -1,0 +1,36 @@
+{
+  "name": "@arbitrage/analytics",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "type-check": "tsc --noEmit",
+    "clean": "rimraf --glob dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@arbitrage/shared": "workspace:*",
+    "cytoscape": "^3.31.0",
+    "d3": "^7.9.0",
+    "echarts": "^5.6.0",
+    "echarts-for-react": "^3.0.2",
+    "graphology": "^0.25.4",
+    "lightweight-charts": "^4.2.2",
+    "sigma": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/cytoscape": "^3.21.9",
+    "@types/d3": "^7.4.3",
+    "@types/react": "^19.0.10",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.3"
+  }
+}

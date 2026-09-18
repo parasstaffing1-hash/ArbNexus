@@ -1,0 +1,192 @@
+services:
+  # ==========================================
+  # TRAEFIK - Reverse Proxy & Edge Router
+  # ==========================================
+  traefik:
+    image: traefik:v3.3
+    container_name: arbitrage_traefik
+    restart: unless-stopped
+    command:
+      - '--api.dashboard=true'
+      - '--api.insecure=true'
+      - '--providers.docker=true'
+      - '--providers.docker.exposedbydefault=false'
+      - '--entrypoints.web.address=:80'
+      - '--entrypoints.traefik.address=:8080'
+    ports:
+      - '80:80' # Web entrypoint
+      - '8080:8080' # Traefik Dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - arbitrage_net
+
+  # ==========================================
+  # POSTGRESQL - Persistent Relational Store
+  # ==========================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: arbitrage_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-arbitrage_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-arbitrage_secure_pass_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-arbitrage_db}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER:-arbitrage_user} -d ${POSTGRES_DB:-arbitrage_db}',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - arbitrage_net
+
+  # ==========================================
+  # VALKEY - High Performance Redis Drop-In
+  # ==========================================
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: arbitrage_valkey
+    restart: unless-stopped
+    command: ['valkey-server', '--requirepass', '${REDIS_PASSWORD:-valkey_secure_pass_2026}']
+    ports:
+      - '6379:6379'
+    volumes:
+      - valkey_data:/data
+    healthcheck:
+      test: ['CMD', 'valkey-cli', '-a', '${REDIS_PASSWORD:-valkey_secure_pass_2026}', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - arbitrage_net
+
+  # ==========================================
+  # NATS - High-Speed Event Bus & JetStream
+  # ==========================================
+  nats:
+    image: nats:2.10-alpine
+    container_name: arbitrage_nats
+    restart: unless-stopped
+    command: ['-js', '-sd', '/data', '-m', '8222']
+    ports:
+      - '4222:4222' # Client port
+      - '8222:8222' # HTTP management/monitoring
+    volumes:
+      - nats_data:/data
+    networks:
+      - arbitrage_net
+
+  # ==========================================
+  # CLICKHOUSE - High-Performance Analytics (Profile: analytics)
+  # ==========================================
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8-alpine
+    container_name: arbitrage_clickhouse
+    profiles: ['analytics']
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-arbitrage_analytics}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ports:
+      - '8123:8123' # HTTP interface
+      - '9000:9000' # Native TCP interface
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    networks:
+      - arbitrage_net
+
+  # ==========================================
+  # PROMETHEUS - Metrics & Telemetry
+  # ==========================================
+  prometheus:
+    image: prom/prometheus:v2.54.0
+    container_name: arbitrage_prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    ports:
+      - '9090:9090'
+    volumes:
+      - ../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - arbitrage_net
+
+  # ==========================================
+  # GRAFANA - Operational Dashboards
+  # ==========================================
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: arbitrage_grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - '3001:3000'
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ../monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    networks:
+      - arbitrage_net
+
+  # ==========================================
+  # OBSERVABILITY PROFILE: Loki, Jaeger, Alertmanager
+  # ==========================================
+  loki:
+    image: grafana/loki:3.1.0
+    container_name: arbitrage_loki
+    profiles: ['observability']
+    ports:
+      - '3100:3100'
+    networks:
+      - arbitrage_net
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    container_name: arbitrage_jaeger
+    profiles: ['observability']
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - '16686:16686' # Web UI
+      - '4318:4318' # OTLP HTTP
+    networks:
+      - arbitrage_net
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: arbitrage_alertmanager
+    profiles: ['observability']
+    ports:
+      - '9093:9093'
+    networks:
+      - arbitrage_net
+
+networks:
+  arbitrage_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  valkey_data:
+  nats_data:
+  clickhouse_data:
+  prometheus_data:
+  grafana_data:

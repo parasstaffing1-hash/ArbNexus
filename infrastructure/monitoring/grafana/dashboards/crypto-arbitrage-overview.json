@@ -1,0 +1,52 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "API Node Uptime (Seconds)",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "arbitrage_api_uptime_seconds",
+          "legendFormat": "Uptime",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "title": "Active WebSocket Connections",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "arbitrage_active_connections",
+          "legendFormat": "Connections",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["crypto", "arbitrage", "production"],
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "title": "Crypto Arbitrage Intelligence - Overview",
+  "uid": "crypto-arbitrage-overview",
+  "version": 1
+}

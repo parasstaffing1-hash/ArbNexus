@@ -1,0 +1,20 @@
+{
+  "backupId": "arbnexus-db-backup-2026-09-18T06-53-59-921Z",
+  "createdAt": "2026-09-18T06:54:00.070Z",
+  "tables": {
+    "MarketPair": 2,
+    "ArbitrageOpportunity": 1,
+    "ExecutionLog": 1,
+    "AlertRule": 1,
+    "User": 1,
+    "AuditLog": 1,
+    "Account": 0,
+    "Watchlist": 0,
+    "StrategyConfig": 0
+  },
+  "sourceDatabaseUrl": "configured://postgres",
+  "formatVersion": "1.0.0",
+  "uncompressedSizeBytes": 2441,
+  "sha256": "b142e5d0383585eed848b1ea49bb654a7848553c8a8378cb6b681d961952d916",
+  "compressedSizeBytes": 842
+}

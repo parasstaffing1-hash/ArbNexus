@@ -1,0 +1,11 @@
+name = "arbnexus-worker"
+main = "src/index.ts"
+compatibility_date = "2026-03-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ENVIRONMENT = "production"
+ENABLE_EXECUTION = "false"
+AIVEN_HOST = "pg-1637aba4-arbnexus4-d8f9.h.aivencloud.com"
+AIVEN_PORT = "19907"
+PLATFORM_NAME = "ArbNexus Intelligence"

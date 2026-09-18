@@ -1,0 +1,25 @@
+{
+  "name": "paper-engine",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "scripts": {
+    "dev": "ts-node src/main.ts",
+    "build": "tsc -b",
+    "start": "node dist/main.js",
+    "type-check": "tsc --noEmit",
+    "clean": "rimraf --glob dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@arbitrage/arbitrage-engine": "workspace:*",
+    "@arbitrage/market-data": "workspace:*",
+    "@arbitrage/shared": "workspace:*",
+    "decimal.js": "^10.5.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "rimraf": "^6.0.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  }
+}

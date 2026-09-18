@@ -1,0 +1,29 @@
+{
+  "name": "@arbitrage/ai",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "type-check": "tsc --noEmit",
+    "clean": "rimraf --glob dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@arbitrage/shared": "workspace:*",
+    "@langchain/core": "^0.3.38",
+    "langchain": "^0.3.15",
+    "llamaindex": "^0.12.1"
+  },
+  "devDependencies": {
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.3"
+  }
+}

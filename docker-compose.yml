@@ -1,0 +1,5 @@
+# ArbNexus Infrastructure Docker Compose
+# Runs: Traefik, PostgreSQL, Valkey, Prometheus, Grafana
+
+include:
+  - infrastructure/docker/docker-compose.yml

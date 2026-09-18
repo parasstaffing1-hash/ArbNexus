@@ -1,0 +1,381 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum ExchangeType {
+  CEX
+  DEX
+}
+
+enum StrategyType {
+  SPATIAL
+  TRIANGULAR
+  CROSS_CHAIN
+  DEX_CEX
+  FUNDING_BASIS
+  STABLECOIN
+  STATISTICAL
+  LIQUIDATION
+  ONCHAIN_MEV
+}
+
+enum OpportunityStatus {
+  DETECTED
+  VALIDATING
+  VALID
+  ACTIVE
+  SIMULATING
+  EXECUTING
+  COMPLETED
+  EXPIRED
+  FAILED
+  REJECTED
+}
+
+enum PaperOrderStatus {
+  PENDING
+  FILLED
+  PARTIALLY_FILLED
+  CANCELLED
+  REJECTED
+}
+
+enum OrderSide {
+  BUY
+  SELL
+}
+
+model Exchange {
+  id          String       @id @default(uuid())
+  name        String
+  slug        String       @unique
+  type        ExchangeType
+  isActive    Boolean      @default(true)
+  apiEndpoint String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  markets     MarketPair[]
+
+  @@map("exchanges")
+}
+
+model MarketPair {
+  id           String    @id @default(uuid())
+  exchangeId   String
+  baseSymbol   String
+  quoteSymbol  String
+  pairString   String
+  minOrderSize Float     @default(0.001)
+  makerFeeBps  Int       @default(10)
+  takerFeeBps  Int       @default(10)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  exchange     Exchange  @relation(fields: [exchangeId], references: [id], onDelete: Cascade)
+
+  @@unique([exchangeId, pairString])
+  @@index([baseSymbol, quoteSymbol])
+  @@map("market_pairs")
+}
+
+model ArbitrageOpportunity {
+  id              String            @id @default(uuid())
+  strategy        StrategyType
+  sourceVenue     String
+  targetVenue     String
+  pair            String
+  buyPrice        Float
+  sellPrice       Float
+  spreadPercent   Float
+  grossProfitUsd  Float
+  netProfitUsd    Float
+  totalFeesUsd    Float
+  minCapitalUsd   Float
+  legsJson        Json
+  confidenceScore Float             @default(0.9)
+  status          OpportunityStatus @default(DETECTED)
+  detectedAt      DateTime          @default(now())
+  expiresAt       DateTime
+
+  executions      ExecutionLog[]
+
+  @@index([pair, status])
+  @@index([detectedAt])
+  @@index([strategy, status])
+  @@map("arbitrage_opportunities")
+}
+
+model ExecutionLog {
+  id                  String               @id @default(uuid())
+  opportunityId       String
+  status              OpportunityStatus
+  txHashes            String[]             @default([])
+  realizedProfitUsd   Float?
+  gasSpentUsd         Float?
+  executionDurationMs Int                  @default(0)
+  errorMessage        String?
+  executedAt          DateTime             @default(now())
+
+  opportunity         ArbitrageOpportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@map("execution_logs")
+}
+
+model AlertRule {
+  id               String   @id @default(uuid())
+  userId           String?
+  name             String
+  minSpreadPercent Float    @default(0.5)
+  minProfitUsd     Float    @default(10.0)
+  channels         String[] @default(["TELEGRAM", "DISCORD"])
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user             User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("alert_rules")
+}
+
+model User {
+  id            String      @id @default(uuid())
+  email         String?     @unique
+  passwordHash  String?
+  walletAddress String?     @unique
+  role          String      @default("USER") // USER, ADMIN, OPERATOR
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  alertRules       AlertRule[]
+  accounts         Account[]
+  sessions         Session[]
+  watchlists       Watchlist[]
+  strategyConfigs  StrategyConfig[]
+  paperAccounts    PaperAccount[]
+  auditLogs        AuditLog[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String   @id @default(uuid())
+  userId            String
+  provider          String   // e.g. "credentials", "github", "web3"
+  providerAccountId String
+  refreshToken      String?
+  accessToken       String?
+  expiresAt         Int?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  sessionToken String   @unique
+  expiresAt    DateTime
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Watchlist {
+  id        String          @id @default(uuid())
+  userId    String
+  name      String
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     WatchlistItem[]
+
+  @@map("watchlists")
+}
+
+model WatchlistItem {
+  id          String    @id @default(uuid())
+  watchlistId String
+  symbol      String    // e.g. "BTC/USDT"
+  venues      String[]  // e.g. ["binance", "bybit"]
+  createdAt   DateTime  @default(now())
+
+  watchlist   Watchlist @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
+
+  @@unique([watchlistId, symbol])
+  @@map("watchlist_items")
+}
+
+model StrategyConfig {
+  id             String       @id @default(uuid())
+  userId         String?
+  strategyType   StrategyType
+  name           String
+  minSpreadBps   Int          @default(10)
+  maxCapitalUsd  Float        @default(25000)
+  maxSlippageBps Int          @default(15)
+  isActive       Boolean      @default(true)
+  parametersJson Json?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("strategy_configs")
+}
+
+model CalculationHistory {
+  id             String   @id @default(uuid())
+  calculatorSlug String
+  inputsJson     Json
+  outputsJson    Json
+  executionMs    Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  @@index([calculatorSlug, createdAt])
+  @@map("calculation_histories")
+}
+
+model BacktestRun {
+  id                 String          @id @default(uuid())
+  strategy           StrategyType
+  name               String
+  startDate          DateTime
+  endDate            DateTime
+  initialCapitalUsd  Float           @default(100000)
+  finalEquityUsd     Float
+  totalNetProfitUsd  Float
+  sharpeRatio        Float           @default(0)
+  maxDrawdownPercent Float           @default(0)
+  winRatePercent     Float           @default(0)
+  tradesCount        Int             @default(0)
+  configJson         Json?
+  createdAt          DateTime        @default(now())
+
+  trades             BacktestTrade[]
+
+  @@index([strategy, createdAt])
+  @@map("backtest_runs")
+}
+
+model BacktestTrade {
+  id            String      @id @default(uuid())
+  backtestRunId String
+  symbol        String
+  venue         String
+  side          OrderSide
+  price         Float
+  quantity      Float
+  feeUsd        Float
+  netProfitUsd  Float
+  timestamp     DateTime
+
+  backtestRun   BacktestRun @relation(fields: [backtestRunId], references: [id], onDelete: Cascade)
+
+  @@index([backtestRunId])
+  @@map("backtest_trades")
+}
+
+model PaperAccount {
+  id                String          @id @default(uuid())
+  userId            String?
+  accountName       String          @default("Default Paper Account")
+  initialBalanceUsd Float           @default(100000)
+  currentBalanceUsd Float           @default(100000)
+  currency          String          @default("USD")
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  user              User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  orders            PaperOrder[]
+  positions         PaperPosition[]
+
+  @@map("paper_accounts")
+}
+
+model PaperOrder {
+  id              String           @id @default(uuid())
+  paperAccountId  String
+  symbol          String
+  venue           String
+  side            OrderSide
+  price           Float
+  quantity        Float
+  status          PaperOrderStatus @default(PENDING)
+  filledQuantity  Float            @default(0)
+  feeUsd          Float            @default(0)
+  slippageUsd     Float            @default(0)
+  realizedPnlUsd  Float            @default(0)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  paperAccount    PaperAccount     @relation(fields: [paperAccountId], references: [id], onDelete: Cascade)
+
+  @@index([paperAccountId, status])
+  @@map("paper_orders")
+}
+
+model PaperPosition {
+  id             String       @id @default(uuid())
+  paperAccountId String
+  symbol         String
+  venue          String
+  quantity       Float
+  entryPrice     Float
+  currentPrice   Float
+  unrealizedPnl  Float        @default(0)
+  updatedAt      DateTime     @updatedAt
+
+  paperAccount   PaperAccount @relation(fields: [paperAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([paperAccountId, symbol, venue])
+  @@map("paper_positions")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String   // e.g. "AUTH_LOGIN", "CONFIG_CHANGE", "PAPER_ORDER"
+  ipAddress String?
+  userAgent String?
+  details   Json?
+  status    String   @default("SUCCESS") // "SUCCESS" or "FAILED"
+  createdAt DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
+
+model SystemMetric {
+  id         String   @id @default(uuid())
+  service    String   // e.g. "api", "data-engine", "indexer"
+  metricName String   // e.g. "latency_ms", "heap_mb", "event_count"
+  value      Float
+  unit       String?  // e.g. "ms", "MB", "count"
+  tagsJson   Json?
+  timestamp  DateTime @default(now())
+
+  @@index([service, metricName, timestamp])
+  @@map("system_metrics")
+}

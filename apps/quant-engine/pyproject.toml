@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quant-engine"
+version = "1.0.0"
+description = "High-performance Quantitative Analytics and Research Engine for Crypto Arbitrage"
+authors = [{ name = "Arbitrage Quant Team" }]
+requires-python = ">=3.11"
+dependencies = [
+    "polars",
+    "pyarrow",
+    "duckdb",
+    "numpy",
+    "scipy",
+    "statsmodels",
+    "scikit-learn",
+    "networkx",
+    "cvxpy",
+    "pydantic",
+    "fastapi",
+    "uvicorn",
+    "httpx",
+    "orjson",
+    "nats-py",
+    "clickhouse-connect"
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "hypothesis"
+]

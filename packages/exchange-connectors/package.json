@@ -1,0 +1,39 @@
+{
+  "name": "@arbitrage/exchange-connectors",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "type-check": "tsc --noEmit",
+    "clean": "rimraf --glob dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@arbitrage/data-quality": "workspace:*",
+    "@arbitrage/market-data": "workspace:*",
+    "@arbitrage/shared": "workspace:*",
+    "bottleneck": "^2.19.5",
+    "ccxt": "^4.4.60",
+    "decimal.js": "^10.5.0",
+    "lru-cache": "^11.5.2",
+    "opossum": "^10.0.0",
+    "p-retry": "4.6.2",
+    "p-timeout": "3.2.0",
+    "ws": "^8.21.3",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/opossum": "^8.1.9",
+    "@types/ws": "^8.18.1",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.3"
+  }
+}

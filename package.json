@@ -1,0 +1,39 @@
+{
+  "name": "arbnexus-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ArbNexus — Master Crypto Arbitrage Intelligence Platform Monorepo",
+  "packageManager": "pnpm@11.13.1",
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter api dev",
+    "build": "turbo run build",
+    "build:packages": "pnpm --filter \"@arbitrage/*\" run build",
+    "test": "turbo run test",
+    "prisma:generate": "pnpm --filter api prisma:generate",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\"",
+    "demo:acceptance": "tsx scripts/acceptance-demonstration.ts",
+    "test:synthetic": "tsx scripts/minimal-integration-test.ts",
+    "clean": "turbo run clean",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.20.0",
+    "@types/node": "^22.13.4",
+    "eslint": "^9.20.1",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3",
+    "prettier": "^3.5.2",
+    "rimraf": "^6.0.1",
+    "tsx": "^4.23.13",
+    "turbo": "^2.4.4",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.24.1",
+    "wrangler": "^4.133.0"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "name": "@arbitrage/crypto",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./wallet": {
+      "types": "./dist/wallet.d.ts",
+      "import": "./dist/wallet.js",
+      "default": "./dist/wallet.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "type-check": "tsc --noEmit",
+    "clean": "rimraf --glob dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@1inch/cross-chain-sdk": "^2.2.4",
+    "@arbitrage/shared": "workspace:*",
+    "@jup-ag/api": "^6.0.48",
+    "@lifi/sdk": "^3.6.0",
+    "@rainbow-me/rainbowkit": "^2.2.0",
+    "@raydium-io/raydium-sdk-v2": "^0.2.70-alpha",
+    "@solana/web3.js": "^1.98.0",
+    "@uniswap/sdk-core": "^7.5.0",
+    "@uniswap/v3-sdk": "^3.13.0",
+    "ccxt": "^4.4.60",
+    "siwe": "^3.0.0",
+    "viem": "^2.23.0",
+    "wagmi": "^2.14.0"
+  },
+  "devDependencies": {
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.3"
+  }
+}
